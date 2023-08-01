@@ -1,50 +1,44 @@
 #!/usr/bin/python3
-'''Contains a Flask web application API.
-'''
+""" This is the first endpoint of my flask api
+"""
+# Import required libraries
 import os
-from flask import Flask, jsonify
-from flask_cors import CORS
-
+from flask import Flask, make_response, jsonify
 from models import storage
-from api.v1.views import app_views
+from api.v1.views import app_views, state_views, city_views, amenity_views
+from api.v1.views import user_views, place_views
 
 
+# configure the host and port
+host = os.getenv("HBNB_API_HOST", "0.0.0.0")
+port = int(os.getenv("HBNB_API_PORT", 5000))
+
+# Create the flask app and register the blueprint
 app = Flask(__name__)
-'''The Flask web application instance.'''
-app_host = os.getenv('HBNB_API_HOST', '0.0.0.0')
-app_port = int(os.getenv('HBNB_API_PORT', '5000'))
-app.url_map.strict_slashes = False
 app.register_blueprint(app_views)
-CORS(app, resources={'/*': {'origins': app_host}})
+app.register_blueprint(state_views)
+app.register_blueprint(city_views)
+app.register_blueprint(amenity_views)
+app.register_blueprint(user_views)
+app.register_blueprint(place_views)
+# Create a method to stop the service
 
 
 @app.teardown_appcontext
-def teardown_flask(exception):
-    '''The Flask app/request context end event listener.'''
-    # print(exception)
+def teardown(exception):
+    '''This method handles the app.teardowncontext
+    by calling the storage.close'''
     storage.close()
+
+# Error handler
 
 
 @app.errorhandler(404)
-def error_404(error):
-    '''Handles the 404 HTTP error code.'''
-    return jsonify(error='Not found'), 404
+def not_found(error):
+    '''Returns a json of error not found message'''
+    return make_response(jsonify({"error": "Not found"}), 404)
 
 
-@app.errorhandler(400)
-def error_400(error):
-    '''Handles the 400 HTTP error code.'''
-    msg = 'Bad request'
-    if isinstance(error, Exception) and hasattr(error, 'description'):
-        msg = error.description
-    return jsonify(error=msg), 400
-
-
-if __name__ == '__main__':
-    app_host = os.getenv('HBNB_API_HOST', '0.0.0.0')
-    app_port = int(os.getenv('HBNB_API_PORT', '5000'))
-    app.run(
-        host=app_host,
-        port=app_port,
-        threaded=True
-    )
+# run the flask server
+if __name__ == "__main__":
+    app.run(host=host, port=port, threaded=True)
